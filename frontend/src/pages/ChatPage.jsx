@@ -18,7 +18,14 @@ const ChatPage = () => {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(() => localStorage.getItem('chat_session_id') || uuidv4());
+  const [sessionId] = useState(() => {
+    let id = localStorage.getItem('chat_session_id');
+    if (!id) {
+      id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('chat_session_id', id);
+    }
+    return id;
+  });
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(false);
