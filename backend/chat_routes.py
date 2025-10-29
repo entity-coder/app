@@ -33,8 +33,8 @@ async def send_message(request: ChatRequest):
         await db.chat_messages.insert_one(user_message.dict())
         logger.info(f"Stored user message for session {request.session_id}")
         
-        # Generate AI response using Gemini with Google Search grounding
-        ai_response = await gemini_service.generate_response(request.message)
+        # Generate AI response using Gemini with emergentintegrations
+        ai_response = await gemini_service.generate_response(request.message, request.session_id)
         
         # Convert sources dict to ChatSource objects
         sources = [ChatSource(**source) for source in ai_response['sources']]
