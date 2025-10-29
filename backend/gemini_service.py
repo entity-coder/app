@@ -1,6 +1,7 @@
 import os
 from typing import List, Dict
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 import logging
 
@@ -9,7 +10,6 @@ load_dotenv()
 
 # Configure Gemini with Emergent LLM Key
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
-genai.configure(api_key=EMERGENT_LLM_KEY)
 
 # System instruction for Shetkari Mitra
 SYSTEM_INSTRUCTION = """You are 'Shetkari Mitra' (Farmer's Friend), an expert, helpful, and highly practical agricultural advisor.
