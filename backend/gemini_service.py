@@ -1,14 +1,13 @@
 import os
 from typing import List, Dict
-from google import genai
-from google.genai import types
 from dotenv import load_dotenv
 import logging
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 logger = logging.getLogger(__name__)
 load_dotenv()
 
-# Configure Gemini with Emergent LLM Key
+# Configure Emergent LLM Key
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
 
 # System instruction for Shetkari Mitra
@@ -34,7 +33,7 @@ CRITICAL RULES:
    - Include specific recommendations with quantities, timings, and measurements
    - Use local terminology and units familiar to Indian farmers
 
-4. GROUNDING: Use the search results provided to give accurate, up-to-date information. Always base your answers on verified agricultural knowledge.
+4. GROUNDING: Use your knowledge to give accurate, up-to-date information. Always base your answers on verified agricultural knowledge.
 
 5. SAFETY: If asked about non-agricultural topics, politely redirect the conversation to farming-related queries.
 """
@@ -42,49 +41,34 @@ CRITICAL RULES:
 
 class GeminiService:
     def __init__(self):
-        # Initialize client with API key
-        self.client = genai.Client(api_key=EMERGENT_LLM_KEY)
-        self.model_name = 'gemini-2.5-flash'
+        # Initialize with Emergent LLM key using emergentintegrations
+        self.api_key = EMERGENT_LLM_KEY
+        self.model = "gemini-2.5-flash"
+        self.provider = "gemini"
         
-        # Configure with Google Search grounding
-        self.config = types.GenerateContentConfig(
-            temperature=0.7,
-            top_p=0.95,
-            top_k=40,
-            max_output_tokens=2048,
-            system_instruction=SYSTEM_INSTRUCTION,
-            tools=[types.Tool(google_search=types.GoogleSearch())]
-        )
-        
-    async def generate_response(self, user_message: str) -> Dict[str, any]:
-        """Generate AI response with Google Search grounding"""
+    async def generate_response(self, user_message: str, session_id: str) -> Dict[str, any]:
+        """Generate AI response using Gemini via emergentintegrations"""
         try:
-            # Generate content with grounding
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=user_message,
-                config=self.config
-            )
+            # Create LLM chat instance
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=session_id,
+                system_message=SYSTEM_INSTRUCTION
+            ).with_model(self.provider, self.model)
             
-            # Extract text response
-            response_text = response.text if hasattr(response, 'text') else ""
+            # Create user message
+            message = UserMessage(text=user_message)
             
-            # Extract sources from grounding metadata
-            sources = []
-            if hasattr(response, 'grounding_metadata') and response.grounding_metadata:
-                if hasattr(response.grounding_metadata, 'grounding_chunks'):
-                    for chunk in response.grounding_metadata.grounding_chunks:
-                        if hasattr(chunk, 'web') and chunk.web:
-                            sources.append({
-                                'title': chunk.web.title if hasattr(chunk.web, 'title') else 'Agricultural Resource',
-                                'url': chunk.web.uri if hasattr(chunk.web, 'uri') else '#'
-                            })
+            # Generate response
+            response = await chat.send_message(message)
             
-            logger.info(f"Generated response with {len(sources)} sources")
+            logger.info(f"Generated response for session {session_id}")
             
+            # Note: emergentintegrations doesn't support Google Search grounding directly
+            # The response is based on model's training data
             return {
-                'text': response_text,
-                'sources': sources
+                'text': response,
+                'sources': []  # No sources available with current library
             }
             
         except Exception as e:
