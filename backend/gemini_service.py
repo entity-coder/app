@@ -42,31 +42,28 @@ CRITICAL RULES:
 
 class GeminiService:
     def __init__(self):
-        # Use Gemini 2.5 Flash model
-        self.model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
-            system_instruction=SYSTEM_INSTRUCTION
-        )
+        # Initialize client with API key
+        self.client = genai.Client(api_key=EMERGENT_LLM_KEY)
+        self.model_name = 'gemini-2.5-flash'
+        
         # Configure with Google Search grounding
-        self.generation_config = genai.GenerationConfig(
+        self.config = types.GenerateContentConfig(
             temperature=0.7,
             top_p=0.95,
             top_k=40,
             max_output_tokens=2048,
+            system_instruction=SYSTEM_INSTRUCTION,
+            tools=[types.Tool(google_search=types.GoogleSearch())]
         )
-        # Enable Google Search grounding
-        self.tools = [genai.Tool.from_google_search_retrieval(
-            genai.GoogleSearchRetrieval()
-        )]
         
     async def generate_response(self, user_message: str) -> Dict[str, any]:
         """Generate AI response with Google Search grounding"""
         try:
             # Generate content with grounding
-            response = self.model.generate_content(
-                user_message,
-                generation_config=self.generation_config,
-                tools=self.tools
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=user_message,
+                config=self.config
             )
             
             # Extract text response
@@ -75,12 +72,13 @@ class GeminiService:
             # Extract sources from grounding metadata
             sources = []
             if hasattr(response, 'grounding_metadata') and response.grounding_metadata:
-                for chunk in response.grounding_metadata.grounding_chunks:
-                    if hasattr(chunk, 'web'):
-                        sources.append({
-                            'title': chunk.web.title if hasattr(chunk.web, 'title') else 'Source',
-                            'url': chunk.web.uri if hasattr(chunk.web, 'uri') else '#'
-                        })
+                if hasattr(response.grounding_metadata, 'grounding_chunks'):
+                    for chunk in response.grounding_metadata.grounding_chunks:
+                        if hasattr(chunk, 'web') and chunk.web:
+                            sources.append({
+                                'title': chunk.web.title if hasattr(chunk.web, 'title') else 'Agricultural Resource',
+                                'url': chunk.web.uri if hasattr(chunk.web, 'uri') else '#'
+                            })
             
             logger.info(f"Generated response with {len(sources)} sources")
             
