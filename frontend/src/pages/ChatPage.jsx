@@ -3,7 +3,6 @@ import { Send, Paperclip, Mic, MicOff, Volume2, VolumeX, Loader2 } from 'lucide-
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
